@@ -1,0 +1,22 @@
+http:
+  port: 5679
+  timeouts:
+    read: 10s
+    write: 10s
+  maxHeaderMegabytes: 2
+
+cache:
+  ttl: 60s
+
+nats:
+  port: 4223
+  clusterId: "server"
+  clientId: "wbNats"
+
+database:
+  postgres:
+    user: "postgres"
+    host: "localhost"
+    port: 5432
+    dbName: "wbDB"
+    sslMode: "disable"

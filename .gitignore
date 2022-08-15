@@ -1,0 +1,8 @@
+#Folders
+.idea
+.bin
+
+#Files
+.env
+L0.pdf
+model.json
