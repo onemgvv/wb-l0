@@ -1,8 +1,8 @@
 #Folders
 .idea
 .bin
-logs/info/*
-logs/error/*
+logs/info/*.log
+logs/error/*.log
 
 #Files
 .env
