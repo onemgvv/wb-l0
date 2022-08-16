@@ -63,15 +63,21 @@ func main() {
 	if err != nil {
 		logger.ErrorLogger.Fatalf("[NATS CONNECTING ERROR]: %s", err.Error())
 	}
-	
+
 	sb, err := conn.Subscribe("order", func(m *stan.Msg) {
 		id, err := uuid.NewRandom()
 		if err != nil {
 			log.Fatalf("UUID GEN ERROR: %s", err.Error())
 		}
 		fmt.Println("DATA: ", string(m.Data))
-		query := fmt.Sprintf("INSERT INTO %s (uuid, data) VALUES ($1, $2)", "orders")
-		db.QueryRow(query, id, string(m.Data))
+		query := fmt.Sprintf("INSERT INTO %s (id, data) VALUES ($1, $2) RETURNING id", "orders")
+		row := db.QueryRow(query, id.String(), string(m.Data))
+
+		if err = row.Scan(&id); err != nil {
+			log.Fatalf(err.Error())
+		}
+
+		c.Set(id.String(), string(m.Data), 1*time.Hour)
 	})
 
 	if err != nil {

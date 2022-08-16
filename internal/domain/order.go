@@ -1,6 +1,6 @@
 package domain
 
 type Order struct {
-	UID  string `json:"uid"`
+	UID  string `json:"id"`
 	Data string `json:"data"`
 }

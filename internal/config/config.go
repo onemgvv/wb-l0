@@ -51,7 +51,7 @@ type (
 		User     string `mapstructure:"user"`
 		Host     string `mapstructure:"host"`
 		Port     string `mapstructure:"port"`
-		Name     string `mapstructure:"name"`
+		Name     string `mapstructure:"dbName"`
 		Password string `mapstructure:"password"`
 		SSLMode  string `mapstructure:"sslMode"`
 	}
@@ -101,7 +101,7 @@ func unmarshall(cfg *Config) error {
 }
 
 func parseEnvFile(cfg *Config) {
-	cfg.DB.Postgres.Password = os.Getenv("DB_PASSWORD")
+	cfg.DB.Postgres.Password = os.Getenv("POSTGRES_PASSWORD")
 }
 
 func setupDefaultValues() {
