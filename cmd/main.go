@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
+	"github.com/nats-io/stan.go"
 	"github.com/onemgvv/wb-l0/internal/config"
 	deliveryHttp "github.com/onemgvv/wb-l0/internal/delivery/http"
 	"github.com/onemgvv/wb-l0/internal/logger"
@@ -11,6 +14,9 @@ import (
 	"github.com/onemgvv/wb-l0/internal/server"
 	"github.com/onemgvv/wb-l0/internal/service"
 	"github.com/onemgvv/wb-l0/pkg/database/postgres"
+	"github.com/onemgvv/wb-l0/pkg/nats"
+	"github.com/patrickmn/go-cache"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,6 +31,8 @@ func main() {
 		logger.ErrorLogger.Errorf("[ENV LOAD ERROR]: %s\n", err.Error())
 	}
 
+	c := cache.New(10*time.Minute, 5*time.Minute)
+
 	cfg, err := config.Init(configPath)
 	if err != nil {
 		logger.ErrorLogger.Errorf("[CONFIG ERROR]: %s\n", err.Error())
@@ -38,6 +46,7 @@ func main() {
 	repositories := repository.NewRepository(db)
 	services := service.NewService(&service.Deps{
 		Repos: repositories,
+		Cache: c,
 	})
 	handler := deliveryHttp.NewHandler(services)
 	app := server.NewServer(cfg, handler.InitRoutes())
@@ -50,6 +59,25 @@ func main() {
 
 	logger.InfoLogger.Infof("Application started on PORT: %s", cfg.HTTP.Port)
 
+	conn, err := nats.Init(cfg)
+	if err != nil {
+		logger.ErrorLogger.Fatalf("[NATS CONNECTING ERROR]: %s", err.Error())
+	}
+	
+	sb, err := conn.Subscribe("order", func(m *stan.Msg) {
+		id, err := uuid.NewRandom()
+		if err != nil {
+			log.Fatalf("UUID GEN ERROR: %s", err.Error())
+		}
+		fmt.Println("DATA: ", string(m.Data))
+		query := fmt.Sprintf("INSERT INTO %s (uuid, data) VALUES ($1, $2)", "orders")
+		db.QueryRow(query, id, string(m.Data))
+	})
+
+	if err != nil {
+		logger.ErrorLogger.Fatalf("[SUB ERROR]: %s", err.Error())
+	}
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	<-quit
@@ -57,6 +85,18 @@ func main() {
 	const timeout = 5 * time.Second
 	ctx, shutdown := context.WithTimeout(context.Background(), timeout)
 	defer shutdown()
+
+	if err = conn.Close(); err != nil {
+		logger.ErrorLogger.Fatalf("[NATS CLOSING CONNECTION]: %s", err.Error())
+	}
+
+	if err = sb.Unsubscribe(); err != nil {
+		logger.ErrorLogger.Fatalf("[NATS UNSUBSCRIBE ERROR]: %s", err.Error())
+	}
+
+	if err = sb.Close(); err != nil {
+		logger.ErrorLogger.Fatalf("[NATS CLOSING ERROR]: %s", err.Error())
+	}
 
 	if err = app.Stop(ctx); err != nil {
 		logger.ErrorLogger.Fatalf("[SERVER STOP] || [FAILED]: %s", err.Error())

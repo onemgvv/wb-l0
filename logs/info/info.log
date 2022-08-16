@@ -1,0 +1,1 @@
+2022-08-16T23:13:18.789+0300	FATAL	cmd/pub.go:40	[NATS CONNECTING ERROR]: nats: no servers available for connection

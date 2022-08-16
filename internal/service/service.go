@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/onemgvv/wb-l0/internal/domain"
 	"github.com/onemgvv/wb-l0/internal/repository"
+	"github.com/patrickmn/go-cache"
 )
 
 type Orders interface {
@@ -15,10 +16,11 @@ type Service struct {
 
 type Deps struct {
 	Repos *repository.Repository
+	Cache *cache.Cache
 }
 
 func NewService(deps *Deps) *Service {
-	orderService := NewOrderService(deps.Repos.Order)
+	orderService := NewOrderService(deps)
 	return &Service{
 		Orders: orderService,
 	}
