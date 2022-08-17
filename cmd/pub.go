@@ -32,6 +32,7 @@ func main() {
 	}
 
 	err = conn.Publish("order", data)
+	//err = conn.Publish("order", []byte("error"))
 	if err != nil {
 		log.Fatalf("Pub error %s", err.Error())
 	}

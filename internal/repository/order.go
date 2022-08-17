@@ -16,7 +16,7 @@ func NewOrderRepository(db *sqlx.DB) *OrderRepository {
 
 func (r *OrderRepository) GetOrder(uid string) (domain.Order, error) {
 	var order domain.Order
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id = $1", ordersTable)
+	query := fmt.Sprint("SELECT * FROM orders WHERE id = $1")
 	err := r.db.Get(&order, query, uid)
 
 	return order, err

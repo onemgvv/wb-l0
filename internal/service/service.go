@@ -7,7 +7,7 @@ import (
 )
 
 type Orders interface {
-	GetById(uid string) (domain.Order, error)
+	GetById(uid string) (domain.OrderJSON, error)
 }
 
 type Service struct {

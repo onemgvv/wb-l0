@@ -16,6 +16,7 @@ import (
 	"github.com/onemgvv/wb-l0/pkg/database/postgres"
 	"github.com/onemgvv/wb-l0/pkg/nats"
 	"github.com/patrickmn/go-cache"
+	"github.com/tidwall/gjson"
 	"log"
 	"net/http"
 	"os"
@@ -43,6 +44,10 @@ func main() {
 		logger.ErrorLogger.Errorf("[POSTGRES DB ERROR]: %s\n", err.Error())
 	}
 
+	if err = postgres.FillCache(db, c); err != nil {
+		log.Fatalf("[Fill cache from db ERROR]: %s", err.Error())
+	}
+
 	repositories := repository.NewRepository(db)
 	services := service.NewService(&service.Deps{
 		Repos: repositories,
@@ -53,7 +58,8 @@ func main() {
 
 	go func() {
 		if err = app.Run(); !errors.Is(err, http.ErrServerClosed) {
-			logger.ErrorLogger.Fatalf("[SERVER START] || [FAILED]: %s", err.Error())
+			log.Fatalf("[SERVER START] || [FAILED]: %s", err.Error())
+			//logger.ErrorLogger.Fatalf("[SERVER START] || [FAILED]: %s", err.Error())
 		}
 	}()
 
@@ -65,12 +71,21 @@ func main() {
 	}
 
 	sb, err := conn.Subscribe("order", func(m *stan.Msg) {
+		fmt.Println("DATA: ", string(m.Data))
+
+		if !gjson.Valid(string(m.Data)) {
+			log.Println("JSON not valid")
+			return
+		}
+
 		id, err := uuid.NewRandom()
 		if err != nil {
 			log.Fatalf("UUID GEN ERROR: %s", err.Error())
 		}
-		fmt.Println("DATA: ", string(m.Data))
-		query := fmt.Sprintf("INSERT INTO %s (id, data) VALUES ($1, $2) RETURNING id", "orders")
+
+		fmt.Println("ID", id)
+
+		query := fmt.Sprint("INSERT INTO orders (id, data) VALUES ($1, $2) RETURNING id")
 		row := db.QueryRow(query, id.String(), string(m.Data))
 
 		if err = row.Scan(&id); err != nil {

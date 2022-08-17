@@ -17,6 +17,6 @@ func (h *Handler) GetByID(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, OkResponse(&ResponseInput{
-		Message: OrderFound, Data: map[string]domain.Order{"order": one},
+		Message: OrderFound, Data: map[string]domain.OrderJSON{"order": one},
 	}))
 }
