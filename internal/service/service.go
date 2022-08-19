@@ -6,6 +6,8 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
+//go:generate mockgen -source=service.go -destination=mocks/mock.go
+
 type Orders interface {
 	GetById(uid string) (domain.OrderJSON, error)
 }
