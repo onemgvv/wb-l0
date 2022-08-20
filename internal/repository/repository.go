@@ -10,6 +10,7 @@ const (
 )
 
 type Order interface {
+	Create(id string, data string) (string, error)
 	GetOrder(uid string) (domain.Order, error)
 }
 

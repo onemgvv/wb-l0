@@ -78,21 +78,15 @@ func main() {
 			return
 		}
 
-		id, err := uuid.NewRandom()
+		uid, err := uuid.NewUUID()
+		id := uid.String()
+
+		_, err = repositories.Order.Create(id, string(m.Data))
 		if err != nil {
-			log.Fatalf("UUID GEN ERROR: %s", err.Error())
+			log.Fatalf("CREATE ORDER ERROR: %s", err.Error())
 		}
 
-		fmt.Println("ID", id)
-
-		query := fmt.Sprint("INSERT INTO orders (id, data) VALUES ($1, $2) RETURNING id")
-		row := db.QueryRow(query, id.String(), string(m.Data))
-
-		if err = row.Scan(&id); err != nil {
-			log.Fatalf(err.Error())
-		}
-
-		c.Set(id.String(), string(m.Data), 1*time.Hour)
+		c.Set(id, string(m.Data), 1*time.Hour)
 	})
 
 	if err != nil {

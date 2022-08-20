@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
@@ -42,6 +43,16 @@ func TestHandler_GetByID(t *testing.T) {
 			},
 			expectedStatusCode:   200,
 			expectedResponseBody: responseBody,
+		},
+		{
+			name:       "Not Found",
+			paramName:  "id",
+			paramValue: "f4bde549-ef88-4cff-a974-fd1abee0e592",
+			mockBehavior: func(s *mockService.MockOrders, id string) {
+				s.EXPECT().GetById(id).Return(nil, errors.New(""))
+			},
+			expectedStatusCode:   404,
+			expectedResponseBody: `{"statusCode":404,"message":"Hoops! Order with this ID not found","data":""}`,
 		},
 	}
 
